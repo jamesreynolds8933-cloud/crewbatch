@@ -1,8 +1,8 @@
 {
- "version": "1.8.0",
- "url": "https://github.com/jamesreynolds8933-cloud/crewbatch/releases/download/v1.8.0/CrewBatch-Setup-1.8.0.exe",
- "sha256": "acea0134fa61d6c425e4cdd7350cb1cbda97553704c055a46dbd71355079f139",
- "size": 319485287,
+ "version": "1.8.1",
+ "url": "https://github.com/jamesreynolds8933-cloud/crewbatch/releases/download/v1.8.1/CrewBatch-Setup-1.8.1.exe",
+ "sha256": "ef4aebb3f142a97f0940b7dea17e517e7a280abc09942d726d299979955b61ef",
+ "size": 319500109,
  "date": "2026-10-24",
  "notes": "New: one-click updates in Settings"
 }
