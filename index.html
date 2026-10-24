@@ -1,0 +1,375 @@
+<title>CrewBatch</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="CrewBatch turns a folder of raw shoot footage into watermarked client previews, 9:16 Shorts and captions, on your own Windows PC. 14-day free trial.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=Hanken+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* Layout: a production monitor. Hero = viewfinder + phone; sections read like a shot list down a light "studio wall". */
+:root{
+  --wall:#eceef1; --panel:#ffffff; --ink:#121418; --ink-2:#4a505a; --rule:#d6dae0;
+  --tc:#ffd400; --tc-ink:#1a1600; --tally:#e5352b; --screen:#0d0f12; --screen-2:#1a1d22;
+  --display:"Big Shoulders Display","Arial Narrow",Impact,sans-serif;
+  --body:"Hanken Grotesk",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --wall:#121417; --panel:#1b1e23; --ink:#eef0f3; --ink-2:#a3aab4; --rule:#2c3138; --screen:#08090b; --screen-2:#16191d; color-scheme:dark}}
+:root[data-theme="dark"]{--wall:#121417; --panel:#1b1e23; --ink:#eef0f3; --ink-2:#a3aab4; --rule:#2c3138; --screen:#08090b; --screen-2:#16191d; color-scheme:dark}
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--wall);color:var(--ink);font:17px/1.6 var(--body);-webkit-font-smoothing:antialiased}
+a{color:inherit}
+:focus-visible{outline:3px solid var(--tc);outline-offset:3px;border-radius:4px}
+.wrap{max-width:1160px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1,h2,h3{font-family:var(--display);font-weight:800;line-height:.95;letter-spacing:.005em;text-wrap:balance;margin:0;text-transform:uppercase}
+p{margin:0}
+.label{font:600 12px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--ink-2)}
+.btn{display:inline-flex;align-items:center;gap:10px;font:700 16px/1 var(--body);padding:15px 22px;border-radius:8px;border:2px solid var(--ink);text-decoration:none;cursor:pointer;background:transparent;color:var(--ink);transition:transform .15s}
+.btn:hover{transform:translateY(-2px)}
+.btn.go{background:var(--tc);border-color:var(--tc);color:var(--tc-ink)}
+.btn small{font:500 12px/1 var(--mono);opacity:.75}
+
+/* ---------- header ---------- */
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--wall)}
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:color-mix(in srgb,var(--wall) 88%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--rule)}
+header.top .wrap{display:flex;align-items:center;gap:28px;height:64px}
+.logo{display:flex;align-items:center;gap:10px;font:900 24px/1 var(--display);letter-spacing:.02em;text-transform:uppercase;text-decoration:none}
+.logo i{width:26px;height:19px;border:3px solid var(--tc);border-radius:3px;position:relative;background:var(--screen)}
+.logo i:after{content:"";position:absolute;left:3px;right:3px;bottom:2px;height:3px;background:var(--tc)}
+nav.links{display:flex;gap:22px;margin-left:auto;font-weight:600;font-size:15px}
+nav.links a{text-decoration:none;color:var(--ink-2)} nav.links a:hover{color:var(--ink)}
+header .btn{padding:10px 16px;font-size:14px}
+@media (max-width:760px){nav.links{display:none} header .btn{margin-left:auto}}
+
+/* ---------- hero ---------- */
+.hero{padding-block:64px 72px}
+.hero .wrap{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.08fr);gap:56px;align-items:center}
+@media (max-width:960px){.hero .wrap{grid-template-columns:1fr;gap:44px}}
+.rec{display:inline-flex;align-items:center;gap:8px;font:600 13px/1 var(--mono);letter-spacing:.1em;color:var(--ink-2);margin-bottom:22px}
+.rec b{width:10px;height:10px;border-radius:50%;background:var(--tally);animation:blink 1.6s steps(1) infinite}
+@keyframes blink{50%{opacity:.25}}
+.hero h1{font-size:clamp(52px,7.4vw,104px)}
+.hero h1 em{font-style:normal;background:var(--tc);color:var(--tc-ink);padding:0 .12em;box-decoration-break:clone;-webkit-box-decoration-break:clone}
+.hero p.lede{font-size:20px;color:var(--ink-2);max-width:34em;margin-top:24px}
+.ctas{display:flex;flex-wrap:wrap;gap:12px;margin-top:32px}
+.fine{margin-top:16px;font:500 13px/1.5 var(--mono);color:var(--ink-2)}
+
+/* viewfinder + phone */
+.rig{position:relative;padding-bottom:40px}
+.monitor{background:var(--screen);border-radius:14px;padding:12px;box-shadow:0 30px 60px -30px rgba(0,0,0,.45)}
+.frame{position:relative;aspect-ratio:16/9;max-width:100%;border-radius:6px;overflow:hidden;
+  background:
+    radial-gradient(120% 70% at 70% 110%,#5d4a3a 0,transparent 60%),
+    linear-gradient(180deg,#6f8fb0 0%,#a9bfd3 48%,#c9b593 49%,#8d7458 100%)}
+.frame .mast{position:absolute;left:62%;bottom:46%;width:3%;height:46%;background:linear-gradient(#2a2f36,#3c434c);clip-path:polygon(35% 0,65% 0,100% 100%,0 100%)}
+.frame .mast:before{content:"";position:absolute;left:-180%;right:-180%;top:12%;height:6%;background:#2a2f36}
+.frame .mast:after{content:"";position:absolute;left:-120%;right:-120%;top:30%;height:5%;background:#2a2f36}
+.frame .ground{position:absolute;inset:auto 0 0;height:34%;background:linear-gradient(#9c8566,#6e5a43)}
+.osd{position:absolute;font:600 clamp(10px,1.35vw,14px)/1 var(--mono);color:#fff}
+.osd.name{left:3%;top:4%;background:rgba(0,0,0,.55);padding:5px 7px;border-radius:3px}
+.osd.wm{inset:0 6%;display:grid;place-items:center;text-align:center;white-space:nowrap;font:800 clamp(13px,2.4vw,30px)/1 var(--display);letter-spacing:.06em;color:rgba(255,255,255,.38);text-shadow:0 0 1px rgba(0,0,0,.4)}
+.osd.tc{left:50%;bottom:6%;transform:translateX(-50%);background:rgba(0,0,0,.6);color:var(--tc);padding:6px 9px;border-radius:3px;font-variant-numeric:tabular-nums;letter-spacing:.04em}
+.osd.res{right:3%;top:4%;color:var(--tc)}
+.mon-bar{display:flex;flex-wrap:wrap;gap:6px 18px;padding:10px 32% 2px 4px;font:500 12px/1 var(--mono);color:#8b929c}
+.mon-bar span b{color:#e9ecef;font-weight:600}
+.phone{position:absolute;right:-6px;bottom:0;width:31%;min-width:120px;aspect-ratio:9/16;max-width:100%;background:var(--screen);border-radius:20px;padding:7px;box-shadow:0 24px 50px -20px rgba(0,0,0,.6);border:1px solid #2a2e35}
+.phone .scr{position:relative;width:100%;height:100%;border-radius:14px;overflow:hidden;background:
+  linear-gradient(180deg,#6f8fb0 0%,#a9bfd3 40%,#c9b593 41%,#8d7458 100%)}
+.phone .scr:before{content:"";position:absolute;inset:0 0 auto;height:22%;background:linear-gradient(rgba(0,0,0,.35),transparent)}
+.phone .handle{position:absolute;top:9%;left:0;right:0;text-align:center;font:700 clamp(8px,1vw,11px)/1 var(--body);color:rgba(255,255,255,.85)}
+.cap{position:absolute;left:6%;right:6%;bottom:22%;text-align:center;font:900 clamp(13px,1.9vw,22px)/1.05 var(--display);letter-spacing:.02em;text-transform:uppercase;color:#fff;
+  text-shadow:0 2px 0 #000,0 -2px 0 #000,2px 0 0 #000,-2px 0 0 #000,2px 2px 0 #000,-2px -2px 0 #000}
+.cap span.on{color:var(--tc)}
+@media (max-width:520px){.phone{width:36%}}
+
+/* ---------- strip of real numbers ---------- */
+.proof{border-block:1px solid var(--rule);background:var(--panel)}
+.proof .wrap{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0}
+.proof .item{padding:26px 24px 26px 0;display:flex;flex-direction:column;gap:6px}
+.proof .item+.item{border-left:1px solid var(--rule);padding-left:24px}
+.proof .num{font:800 40px/1 var(--display);font-variant-numeric:tabular-nums}
+.proof .num small{font:600 15px/1 var(--mono);color:var(--ink-2);margin-left:6px;text-transform:none}
+.proof p{color:var(--ink-2);font-size:15px}
+@media (max-width:760px){.proof .wrap{grid-template-columns:1fr}.proof .item+.item{border-left:0;border-top:1px solid var(--rule);padding-left:0}}
+
+/* ---------- sections ---------- */
+section.block{padding-block:88px}
+.head{display:flex;flex-direction:column;gap:14px;max-width:46em;margin-bottom:44px}
+.head h2{font-size:clamp(40px,5vw,64px)}
+.head p{color:var(--ink-2);font-size:18px}
+
+.outputs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}
+@media (max-width:960px){.outputs{grid-template-columns:1fr}}
+.out{background:var(--panel);border:1px solid var(--rule);border-radius:var(--r);padding:26px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.out .tag{font:600 12px/1 var(--mono);letter-spacing:.1em;color:var(--ink-2);text-transform:uppercase;display:flex;justify-content:space-between}
+.out h3{font-size:32px}
+.out p{color:var(--ink-2);font-size:16px}
+.specs{display:flex;flex-wrap:wrap;gap:6px;margin-top:auto;padding-top:8px}
+.specs span{font:500 12.5px/1 var(--mono);padding:6px 8px;border:1px solid var(--rule);border-radius:5px;color:var(--ink)}
+
+.steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;counter-reset:s;border-top:2px solid var(--ink)}
+@media (max-width:860px){.steps{grid-template-columns:1fr}}
+.step{padding:26px 28px 6px 0;counter-increment:s;min-width:0}
+.step+.step{padding-left:28px;border-left:1px solid var(--rule)}
+@media (max-width:860px){.step+.step{padding-left:0;border-left:0;border-top:1px solid var(--rule)}}
+.step:before{content:"STEP " counter(s);display:block;font:600 12px/1 var(--mono);letter-spacing:.12em;color:var(--ink-2);margin-bottom:16px}
+.step h3{font-size:30px;margin-bottom:10px}
+.step p{color:var(--ink-2)}
+.step code{font:600 14px var(--mono);background:var(--panel);border:1px solid var(--rule);padding:1px 6px;border-radius:4px}
+
+.who{display:flex;flex-wrap:wrap;gap:10px}
+.who span{font:700 15px/1 var(--body);padding:12px 16px;border-radius:999px;background:var(--panel);border:1px solid var(--rule)}
+
+/* ---------- pricing ---------- */
+.prices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;max-width:880px}
+@media (max-width:760px){.prices{grid-template-columns:1fr}}
+.price{background:var(--panel);border:1px solid var(--rule);border-radius:var(--r);padding:30px;display:flex;flex-direction:column;gap:12px;position:relative}
+.price.best{border:2px solid var(--ink)}
+.price .ribbon{position:absolute;top:-13px;left:26px;background:var(--tc);color:var(--tc-ink);font:700 12px/1 var(--mono);letter-spacing:.08em;padding:6px 10px;border-radius:4px}
+.price h3{font-size:26px}
+.price .amt{font:900 64px/1 var(--display);font-variant-numeric:tabular-nums}
+.price .amt small{font:600 16px/1 var(--mono);color:var(--ink-2);margin-left:6px}
+.price .note{color:var(--ink-2);font-size:15px}
+.price ul{list-style:none;margin:8px 0 18px;padding:0;display:flex;flex-direction:column;gap:8px;font-size:15.5px}
+.price li{display:flex;gap:10px}
+.price li:before{content:"";flex:none;width:14px;height:8px;margin-top:7px;border-left:3px solid var(--ink);border-bottom:3px solid var(--ink);transform:rotate(-45deg)}
+.price .btn{margin-top:auto;justify-content:center}
+.trial-note{margin-top:22px;font:500 14px/1.5 var(--mono);color:var(--ink-2);max-width:60em}
+
+/* ---------- faq ---------- */
+.faq{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 48px}
+@media (max-width:860px){.faq{grid-template-columns:1fr}}
+.faq details{border-top:1px solid var(--rule);padding-block:18px}
+.faq summary{cursor:pointer;font-weight:700;font-size:17.5px;list-style:none;display:flex;justify-content:space-between;gap:16px}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary:after{content:"+";font:600 20px/1 var(--mono);color:var(--ink-2)}
+.faq details[open] summary:after{content:"–"}
+.faq details p{color:var(--ink-2);margin-top:10px;font-size:16px;max-width:36em}
+
+/* ---------- closing band ---------- */
+.band{background:var(--screen);color:#eef0f3}
+.band .wrap{padding-block:72px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:28px}
+.band h2{font-size:clamp(40px,5.5vw,72px);max-width:12em}
+.band h2 span{color:var(--tc)}
+.band .btn{border-color:#eef0f3;color:#eef0f3}
+.band .btn.go{border-color:var(--tc);color:var(--tc-ink)}
+footer{padding-block:34px;color:var(--ink-2);font-size:14px}
+footer .wrap{display:flex;flex-wrap:wrap;gap:12px 28px;align-items:center}
+.contact{display:inline-flex;align-items:center;gap:8px;font:500 14px var(--mono);color:var(--ink)}
+.copy{font:600 12px var(--body);padding:4px 8px;border:1px solid var(--rule);background:var(--panel);color:var(--ink);border-radius:5px;cursor:pointer}
+
+@media (prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}}
+</style>
+
+<header class="top">
+  <div class="wrap">
+    <a class="logo" href="#top" aria-label="CrewBatch home"><i></i>CrewBatch</a>
+    <nav class="links" aria-label="Sections">
+      <a href="#outputs">What it makes</a><a href="#how">How it works</a><a href="#pricing">Pricing</a><a href="#faq">Questions</a>
+    </nav>
+    <a class="btn go js-download" href="#pricing">Free trial</a>
+  </div>
+</header>
+
+<main id="top">
+  <section class="hero">
+    <div class="wrap">
+      <div>
+        <div class="rec"><b aria-hidden="true"></b>REC · FOR VIDEO CREWS IN SOUTH AFRICA</div>
+        <h1>Raw footage in. <em>Client-ready</em> previews out.</h1>
+        <p class="lede">CrewBatch takes a whole shoot folder and makes watermarked previews with burned-in timecode, 9:16 Shorts and auto captions. It runs on your own laptop, so your footage is never uploaded anywhere.</p>
+        <div class="ctas">
+          <a class="btn go js-download" href="#pricing">Download for Windows <small>14 days free</small></a>
+          <a class="btn" href="#how">See how it works</a>
+        </div>
+        <p class="fine">Windows 10 &amp; 11 · No card needed for the trial · R450/month after</p>
+      </div>
+
+      <div class="rig" aria-label="Example of a CrewBatch preview and a captioned Short">
+        <div class="monitor">
+          <div class="frame">
+            <div class="ground"></div><div class="mast"></div>
+            <div class="osd name">A014_site-walk.MOV</div>
+            <div class="osd res">720p</div>
+            <div class="osd wm">PREVIEW · NOT FOR BROADCAST</div>
+            <div class="osd tc" id="tc">00:01:12:08</div>
+          </div>
+          <div class="mon-bar"><span>IN <b>4K · 412 MB</b></span><span>OUT <b>720p · 9.8 MB</b></span><span>ORIGINAL <b>untouched</b></span></div>
+        </div>
+        <div class="phone" aria-hidden="true">
+          <div class="scr">
+            <div class="handle">@yourcrew</div>
+            <div class="cap" id="cap"><span>RIGGING</span> <span>THE</span> <span>MAST</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="proof">
+    <div class="wrap">
+      <div class="item"><div class="num">12 MB<small>→ 0.6 MB</small></div><p>A 4K clip becomes a 720p preview small enough to send on WhatsApp.</p></div>
+      <div class="item"><div class="num">1 click<small>whole folder</small></div><p>Every clip in the shoot folder, one after another, while you pack up gear.</p></div>
+      <div class="item"><div class="num">0 uploads<small>offline</small></div><p>Everything happens on your PC. Clients' footage never leaves it.</p></div>
+    </div>
+  </div>
+
+  <section class="block" id="outputs">
+    <div class="wrap">
+      <div class="head">
+        <span class="label">What it makes</span>
+        <h2>Three deliverables from one folder</h2>
+        <p>Pick what you need for this shoot. CrewBatch puts each kind in its own folder next to your footage.</p>
+      </div>
+      <div class="outputs">
+        <article class="out">
+          <div class="tag"><span>Client previews</span><span>/previews</span></div>
+          <h3>Watermarked, timecoded, light</h3>
+          <p>Your watermark across the frame, timecode at the bottom so clients can say "cut at 00:01:12", and the clip name on top. Phone clips stay vertical, camera clips stay wide.</p>
+          <div class="specs"><span>540p WhatsApp</span><span>720p email</span><span>1080p editor</span></div>
+        </article>
+        <article class="out">
+          <div class="tag"><span>Social Shorts</span><span>/shorts</span></div>
+          <h3>9:16, ready to post</h3>
+          <p>Wide footage gets a blurred background fill or a centre crop. Add your handle, and the clip is ready for Reels, TikTok and YouTube Shorts.</p>
+          <div class="specs"><span>1080 × 1920</span><span>Blur fill</span><span>Centre crop</span></div>
+        </article>
+        <article class="out">
+          <div class="tag"><span>Captions</span><span>/captions</span></div>
+          <h3>Word-by-word, on your PC</h3>
+          <p>Speech is turned into bold captions that light up as each word is said. You also get .srt files for Premiere or Resolve. No account, no upload, no per-minute fees.</p>
+          <div class="specs"><span>English</span><span>Afrikaans</span><span>.srt export</span></div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="how" style="padding-top:0">
+    <div class="wrap">
+      <div class="head">
+        <span class="label">How it works</span>
+        <h2>From card dump to client in minutes</h2>
+      </div>
+      <div class="steps">
+        <div class="step"><h3>Pick the shoot folder</h3><p>Copy today's clips off the card, open CrewBatch and point it at the folder. It finds every video in there.</p></div>
+        <div class="step"><h3>Choose your outputs</h3><p>Previews, Shorts, captions, or all three. Save it as a preset like <code>Estate agent weekly</code> and it's one click next time.</p></div>
+        <div class="step"><h3>Send the review page</h3><p>CrewBatch makes a <code>review.html</code> with every clip numbered. The client replies with the numbers they want kept.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" style="padding-top:0">
+    <div class="wrap">
+      <div class="head">
+        <span class="label">Who uses it</span>
+        <h2>Built for crews who shoot every week</h2>
+      </div>
+      <div class="who">
+        <span>Wedding &amp; event videographers</span><span>Real estate agents</span><span>Construction &amp; site progress</span>
+        <span>Marketing agencies</span><span>Gyms &amp; coaches</span><span>Content creators</span><span>Church media teams</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="pricing" style="padding-top:0">
+    <div class="wrap">
+      <div class="head">
+        <span class="label">Pricing</span>
+        <h2>One price. Unlimited clips.</h2>
+        <p>Every plan starts with 14 days free and every feature switched on. Subscribe from inside the app when you're ready.</p>
+      </div>
+      <div class="prices">
+        <div class="price">
+          <h3>Monthly</h3>
+          <div class="amt">R450<small>/ month</small></div>
+          <p class="note">Cancel any time.</p>
+          <ul><li>Unlimited clips and batches</li><li>Previews, Shorts and captions</li><li>Analytics: time and data saved</li><li>Free updates</li></ul>
+          <a class="btn go js-download" href="#pricing">Start free trial</a>
+        </div>
+        <div class="price best">
+          <span class="ribbon">2 MONTHS FREE</span>
+          <h3>Annual</h3>
+          <div class="amt">R4 500<small>/ year</small></div>
+          <p class="note">Works out to R375 a month.</p>
+          <ul><li>Everything in Monthly</li><li>One payment a year</li><li>Price locked for 12 months</li><li>Free updates</li></ul>
+          <a class="btn go js-download" href="#pricing">Start free trial</a>
+        </div>
+      </div>
+      <p class="trial-note">Payments in rand through Paystack. Your key arrives by email and renews automatically each month.</p>
+    </div>
+  </section>
+
+  <section class="block" id="faq" style="padding-top:0">
+    <div class="wrap">
+      <div class="head"><span class="label">Questions</span><h2>Before you install</h2></div>
+      <div class="faq">
+        <details><summary>Is my footage uploaded anywhere?</summary><p>No. CrewBatch runs on your own computer. Clips, previews and captions never leave it. The internet is only used to activate your subscription.</p></details>
+        <details><summary>What computer do I need?</summary><p>A Windows 10 or 11 laptop or PC (64-bit). Any recent laptop handles previews and Shorts. Captions are quicker on a faster processor.</p></details>
+        <details><summary>Windows says "Windows protected your PC". Is it safe?</summary><p>Yes. Windows shows that for new apps from small makers that haven't paid for a certificate yet. Click <b>More info</b>, then <b>Run anyway</b>. You only see it once.</p></details>
+        <details><summary>How do I download it?</summary><p>Click Download, then click <b>CrewBatch-Setup</b> (the .exe file) on the page that opens. Double-click it when it's downloaded and follow the steps. It takes about two minutes.</p></details>
+        <details><summary>How do updates work?</summary><p>Free, and one click. When a new version is out, CrewBatch shows a green <b>Update now</b> button. It updates itself and opens again, with your licence, presets and history untouched.</p></details>
+        <details><summary>Does it change my original files?</summary><p>Never. CrewBatch only reads your footage and writes new files into a separate folder.</p></details>
+        <details><summary>What happens after the free trial?</summary><p>Processing pauses until you subscribe. Your finished videos, presets and analytics stay where they are.</p></details>
+        <details><summary>Which languages do captions support?</summary><p>English and Afrikaans work well, plus Portuguese, French and Swahili. isiZulu and isiXhosa aren't supported by the speech engine yet.</p></details>
+        <details><summary>How do I cancel?</summary><p>Use the cancel link in your Paystack payment email. Your key keeps working until the end of the month you paid for.</p></details>
+      </div>
+    </div>
+  </section>
+
+  <div class="band">
+    <div class="wrap">
+      <h2>Stop exporting clips <span>one by one.</span></h2>
+      <div class="ctas" style="margin:0">
+        <a class="btn go js-download" href="#pricing">Download for Windows</a>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>© <span id="yr">2026</span> CrewBatch</span>
+    <span class="contact">jamesreynolds8933@gmail.com <button class="copy" id="copyMail" type="button">Copy</button></span>
+    <span>Made in South Africa</span>
+  </div>
+</footer>
+
+<script>
+/* Paste the address of CrewBatch-Setup.exe here once it's uploaded. Until then the buttons go to Pricing. */
+const DOWNLOAD_URL = "https://github.com/jamesreynolds8933-cloud/crewbatch/releases/latest";
+if (DOWNLOAD_URL) document.querySelectorAll(".js-download").forEach(a => { a.href = DOWNLOAD_URL; });
+
+document.getElementById("yr").textContent = new Date().getFullYear();
+
+// burned-in timecode, 25 fps like a PAL camera
+const tc = document.getElementById("tc");
+let f = (1 * 60 + 12) * 25 + 8;
+const pad = n => String(n).padStart(2, "0");
+const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+function tick(){
+  f++;
+  const fr = f % 25, s = Math.floor(f / 25);
+  tc.textContent = `${pad(Math.floor(s / 3600))}:${pad(Math.floor(s / 60) % 60)}:${pad(s % 60)}:${pad(fr)}`;
+}
+if (!still) setInterval(tick, 40);
+
+// karaoke captions, one word lights up at a time
+const lines = [["RIGGING","THE","MAST"],["CLIENT","WANTS","IT"],["BY","FIVE","TODAY"]];
+const cap = document.getElementById("cap");
+let li = 0, wi = 0;
+function draw(){
+  cap.innerHTML = lines[li].map((w, i) => `<span class="${i <= wi ? "on" : ""}">${w}</span>`).join(" ");
+}
+draw();
+if (!still) setInterval(() => { wi++; if (wi >= lines[li].length) { wi = 0; li = (li + 1) % lines.length; } draw(); }, 520);
+
+// copy email
+document.getElementById("copyMail").addEventListener("click", async e => {
+  const t = "jamesreynolds8933@gmail.com";
+  try { await navigator.clipboard.writeText(t); e.target.textContent = "Copied"; }
+  catch (_) { const r = document.createRange(); r.selectNodeContents(e.target.parentNode.firstChild); getSelection().removeAllRanges(); getSelection().addRange(r); }
+  setTimeout(() => e.target.textContent = "Copy", 1600);
+});
+</script>
